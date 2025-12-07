@@ -1,8 +1,8 @@
 import os
-import cv2                   #py -3.11 features_generator.py
+import cv2
 import numpy as np
 import joblib
-from feature_extractor import FeatureExtractor
+from feature_extractor import FeatureExtractor  # <- new deep extractor
 from sklearn.preprocessing import StandardScaler
 
 DATA_DIR = "dataset_complete"
@@ -11,10 +11,9 @@ OUTPUT_LABELS = "labels.npy"
 OUTPUT_SCALER = "feature_scaler.pkl"
 
 extractor = FeatureExtractor()
-X = []   # Features
-y = []   # Labels
+X = []  # Features
+y = []  # Labels
 
-# Map folder names to class IDs
 labels_map = {
     "glass": 0,
     "paper": 1,
@@ -29,7 +28,7 @@ for category in labels_map:
     folder = os.path.join(DATA_DIR, category)
     if not os.path.isdir(folder):
         continue
-    
+
     print(f"Processing: {category}")
     for filename in os.listdir(folder):
         filepath = os.path.join(folder, filename)
@@ -37,6 +36,8 @@ for category in labels_map:
         if image is None:
             continue
         image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # Use new deep feature extractor
         feature_vector = extractor.extract_features(image)
         X.append(feature_vector)
         y.append(labels_map[category])
@@ -45,9 +46,9 @@ X = np.array(X)
 y = np.array(y)
 
 if len(X) == 0:
-    print("No features extracted")
-    raise SystemExit(1)
+    raise SystemExit("No features extracted")
 
+# Optionally scale features (good for SVM)
 print("Scaling features...")
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)

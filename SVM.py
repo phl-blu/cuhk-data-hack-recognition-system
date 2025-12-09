@@ -10,20 +10,15 @@ from sklearn.pipeline import Pipeline
 
 from scipy.stats import loguniform
 
-FEATURES_FILE = "features.npy"
-LABELS_FILE = "labels.npy"
-MODEL_FILE = "svm_model.pkl"
+from configures import *
+from FeatureLoader import *
+
 
 # -------------------------------
 # Load deep features
 # -------------------------------
-if not os.path.exists(FEATURES_FILE) or not os.path.exists(LABELS_FILE):
-    raise SystemExit("Missing feature files. Run deep_feature_extractor.py first.")
-
-X = np.load(FEATURES_FILE)
-y = np.load(LABELS_FILE)
-
-print("Loaded deep features:", X.shape, "labels:", y.shape)
+loader = FeatureLoader()
+X, y = loader.load()
 
 # -------------------------------
 # Train/Test Split

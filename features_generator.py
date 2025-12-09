@@ -48,7 +48,13 @@ y = np.array(y)
 if len(X) == 0:
     raise SystemExit("No features extracted")
 
-# Optionally scale features (good for SVM)
+# Shuffle dataset
+indices = np.arange(len(X))
+np.random.shuffle(indices)
+X = X[indices]
+y = y[indices]
+
+# Optionally scale features (good for SVM, and KNN)
 print("Scaling features...")
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)

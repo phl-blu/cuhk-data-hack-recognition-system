@@ -6,7 +6,7 @@ if __name__ == "__main__":
         shutil.rmtree(OUTPUT_DIR)
         print(f"Removed existing directory: {OUTPUT_DIR}")
     augmentor = WasteDataAugmentor(
-        source_dir="dataset - Copy",
+        source_dir=SOURCE_DIR,
         output_dir=OUTPUT_DIR,
         target_size=(224, 224)
     )

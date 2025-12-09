@@ -33,7 +33,7 @@ class WasteDataAugmentor:
         except Exception:
             return False
 
-    def augment_dataset(self, augmentation_factor=0.3, copy_originals=True):
+    def augment_dataset(self, augmentation_factor=0.3, copy_originals=True,target_class_size = 500):
         datagen = ImageDataGenerator(
             rotation_range=40,
             width_shift_range=0.2,
@@ -72,8 +72,21 @@ class WasteDataAugmentor:
                 continue
 
             total_images = len(image_files)
-            total_needed = ceil(total_images * augmentation_factor)
-        
+    
+            if(total_images >= target_class_size):
+                # use the factor
+                total_needed = ceil(augmentation_factor * total_images)
+                print(f"Using Factor, Need {total_needed} augmentations")
+            else:
+                # Calculate augmentations needed to reach target_class_size
+                if copy_originals:
+                    # Augmentations = target - originals (originals will be copied)
+                    total_needed = max(0, target_class_size - total_images)
+                else:
+                    # Generate all images through augmentation
+                    total_needed = target_class_size
+                print(f"Target size: {target_class_size}, Need {total_needed} augmentations")
+            
             base_aug = total_needed // total_images       # equal for all
             extra = total_needed % total_images           # remaining to distribute
 
@@ -133,6 +146,9 @@ class WasteDataAugmentor:
                 'augmented': augmented_count,
                 'total': original_count + augmented_count
             }
+            print("#"*20)
+            # print total images in category
+            print(f"Total images in {category}: {stats['per_category'][category]['total']}")
 
         print("\n" + "=" * 70)
         print("SUMMARY")

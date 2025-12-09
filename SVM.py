@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV, Strati
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 
 from scipy.stats import loguniform
 
@@ -38,6 +39,7 @@ print("Train:", X_train.shape, "Test:", X_test.shape)
 # -------------------------------
 pipe = Pipeline([
     ("scaler", StandardScaler()),
+    ("pca", PCA()),
     ("svc", SVC(random_state=42, probability=False, class_weight="balanced"))
 ])
 
@@ -45,12 +47,16 @@ pipe = Pipeline([
 # Hyperparameter search space
 # -------------------------------
 param_distributions = {
+    "pca__n_components": [None, 64, 128, 256, 512],
+    "pca__whiten": [True, False],
+
     "svc__kernel": ["rbf"],
-    "svc__C": loguniform(1e-2, 100),
-    "svc__gamma": loguniform(1e-4, 1e-1),
-    "svc__tol": [1e-3],
-    "svc__max_iter": [5000],
+    "svc__C": loguniform(1e-2, 1e3),       # MUCH larger range
+    "svc__gamma": loguniform(1e-7, 1e-1),  # covers small & large gammas
+    "svc__tol": [1e-3, 1e-4],
+    "svc__max_iter": [10000]
 }
+# -------------------------------
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 

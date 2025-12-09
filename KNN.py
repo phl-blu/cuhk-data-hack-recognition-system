@@ -4,6 +4,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score
 from sklearn.decomposition import PCA
 from FeatureLoader import *
+import joblib
 
 # Label mapping
 labels_map = {
@@ -80,3 +81,6 @@ for factor in [2, 2.5, 3, 3.5, 4, 4.5, 5]:
     acc = accuracy_score(y_test, y_pred)
     
     print(f"Factor={factor} | Threshold: {threshold:.4f} | Test Accuracy: {acc:.4f} | Unknowns: {num_unknowns}")
+# Save the trained model
+joblib.dump(model, "knn_model.pkl")
+print("\nSaved model to:", "knn_model.pkl")

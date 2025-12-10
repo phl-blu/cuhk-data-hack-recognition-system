@@ -146,10 +146,10 @@ class WasteDataAugmentor:
                 'augmented': augmented_count,
                 'total': original_count + augmented_count
             }
-            print("#"*20)
             # print total images in category
             print(f"Total images in {category}: {stats['per_category'][category]['total']}")
-
+            print("#"*20)
+            
         print("\n" + "=" * 70)
         print("SUMMARY")
         print("=" * 70)

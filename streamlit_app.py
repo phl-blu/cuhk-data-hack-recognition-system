@@ -22,19 +22,26 @@ def load_model(model_type="svm"):
     
     if not os.path.exists(model_file):
         st.error(f"❌ {model_file} not found! Train the model first.")
-        return None, None, None
+        return None, None, None, None
+    
+    # Load scaler
+    scaler_file = "feature_scaler.pkl"
+    if not os.path.exists(scaler_file):
+        st.error(f"❌ {scaler_file} not found!")
+        return None, None, None, None
     
     model = joblib.load(model_file)
+    scaler = joblib.load(scaler_file)
     extractor = FeatureExtractor()
     labels = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash']
-    return model, extractor, labels
+    return model, extractor, labels, scaler
 
 # Sidebar: Model selection
 st.sidebar.title("⚙️ Model Configuration")
 model_type = st.sidebar.radio("Choose Classification Model:", ["SVM", "KNN"], horizontal=True)
 model_selected = model_type.lower()
 
-model, extractor, class_names = load_model(model_selected)
+model, extractor, class_names, scaler = load_model(model_selected)
 
 color_map = {
     'cardboard': '#8D6E63', 'glass': '#42A5F5', 'metal': '#78909C',
@@ -43,15 +50,24 @@ color_map = {
 
 # Helper: classify an image
 def classify(image_np):
+    # Convert RGB to BGR (OpenCV format)
     image_bgr = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+    
+    # Step 1: Extract features using ResNet50
     features = extractor.extract_features(image_bgr)
-
-    pred_idx = model.predict([features])[0]
+    
+    # Step 2: Scale features (same as training/test data)
+    features_scaled = scaler.transform([features])
+    
+    # Step 3: Predict using the scaled features
+    pred_idx = model.predict(features_scaled)[0]
     pred_name = class_names[pred_idx]
 
-    scores = model.decision_function([features])[0]
+    # Step 4: Get confidence scores
+    scores = model.decision_function(features_scaled)[0]
     probs = np.exp(scores - scores.max())
     probs /= probs.sum()
+    
     return pred_name, probs, pred_idx
 
 # Tabs

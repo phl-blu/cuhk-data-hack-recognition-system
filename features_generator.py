@@ -2,12 +2,12 @@ import os
 import cv2
 import numpy as np
 import joblib
-from feature_extractor import FeatureExtractor
+from feature_extractor import FeatureExtractor  # <- new deep extractor
 from sklearn.preprocessing import StandardScaler
 
-DATA_DIR = "dataset_complete"
-OUTPUT_FEATURES = "features.npy"
-OUTPUT_LABELS = "labels.npy"
+DATA_DIR = "dataset_test"
+OUTPUT_FEATURES = "features_test.npy"
+OUTPUT_LABELS = "labels_test.npy"
 OUTPUT_SCALER = "feature_scaler.pkl"
 
 extractor = FeatureExtractor()
@@ -54,16 +54,19 @@ np.random.shuffle(indices)
 X = X[indices]
 y = y[indices]
 
-
+# Optionally scale features (good for SVM, and KNN)
 print("Scaling features...")
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+#train
+# scaler = StandardScaler()
+# X_scaled = scaler.transform(X)
+# joblib.dump(scaler, OUTPUT_SCALER)
+#test
+scaler = joblib.load(OUTPUT_SCALER)
+X_scaled = scaler.transform(X)
 
 np.save(OUTPUT_FEATURES, X_scaled)
 np.save(OUTPUT_LABELS, y)
-joblib.dump(scaler, OUTPUT_SCALER)
 
 print("Feature extraction done!")
 print("X shape:", X_scaled.shape)
 print("y shape:", y.shape)
-

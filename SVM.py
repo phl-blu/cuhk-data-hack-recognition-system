@@ -3,7 +3,7 @@ import numpy as np
 import joblib
 
 from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split, RandomizedSearchCV, StratifiedKFold
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
@@ -24,10 +24,10 @@ X, y = loader.load()
 # -------------------------------
 # Train/Test Split
 # -------------------------------
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, stratify=y, random_state=42
-)
-print("Train:", X_train.shape, "Test:", X_test.shape)
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y, test_size=0.2, stratify=y, random_state=42
+# )
+print("Train:", X.shape, y.shape)
 
 # -------------------------------
 # Pipeline: SCALER → SVM
@@ -71,7 +71,7 @@ rs = RandomizedSearchCV(
 # Train SVM
 # -------------------------------
 print("\nStarting Randomized Search…\n")
-rs.fit(X_train, y_train)
+rs.fit(X, y)
 
 best = rs.best_estimator_
 print("\nBest Params:", rs.best_params_)
@@ -80,13 +80,15 @@ print("Best CV Accuracy:", round(rs.best_score_, 4))
 # -------------------------------
 # Training Accuracy
 # -------------------------------
-y_train_pred = best.predict(X_train)
-train_acc = accuracy_score(y_train, y_train_pred)
+y_train_pred = best.predict(X)
+train_acc = accuracy_score(y, y_train_pred)
 print("\nTraining Accuracy:", round(train_acc, 4))
 
 # -------------------------------
 # Test Accuracy
 # -------------------------------
+loader = FeatureLoader(features_file="features_test.npy", labels_file="labels_test.npy")
+X_test, y_test = loader.load()
 y_test_pred = best.predict(X_test)
 test_acc = accuracy_score(y_test, y_test_pred)
 print("Test Accuracy:", round(test_acc, 4))

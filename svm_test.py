@@ -115,7 +115,7 @@ def test_image(image_path):
 
 def main():
     print("\n")
-    image_path= ("dataset_test/paper/0d8f0b99-d952-4634-8cfe-2f03ab5bfcfe.jpg")
+    image_path= ("new_data/OIP (1).webp")
     
     success = test_image(image_path)
     

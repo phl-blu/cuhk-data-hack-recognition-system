@@ -58,7 +58,7 @@ y = y[indices]
 print("Scaling features...")
 #train
 # scaler = StandardScaler()
-# X_scaled = scaler.transform(X)
+# X_scaled = scaler.fit_transform(X)
 # joblib.dump(scaler, OUTPUT_SCALER)
 #test
 scaler = joblib.load(OUTPUT_SCALER)

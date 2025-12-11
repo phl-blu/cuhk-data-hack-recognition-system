@@ -3,9 +3,10 @@ import joblib
 import numpy as np
 import os
 from feature_extractor import FeatureExtractor
+OUTPUT_SCALER = 'feature_scaler.pkl'
 
 MODEL_FILE = 'svm_model.pkl'
-class_names = ['cardboard', 'glass', 'metal', 'paper', 'plastic', 'trash']
+class_names = ['glass', 'paper','cardboard', 'plastic', 'metal', 'trash','unknown']
 
 def test_image(image_path):
     """Test a single image with the SVM model"""
@@ -27,6 +28,7 @@ def test_image(image_path):
     if img is None:
         print(f"   ERROR: Cannot read image. Check if it's a valid image file")
         return False
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     print(f"   OK: Image loaded")
     print(f"   Shape: {img.shape} (Height x Width x Channels)")
     
@@ -35,6 +37,9 @@ def test_image(image_path):
     try:
         extractor = FeatureExtractor()
         features = extractor.extract_features(img)
+        features = np.array(features)
+        scaler = joblib.load(OUTPUT_SCALER)
+        features = scaler.transform(features.reshape(1, -1))
         print(f"   OK: Features extracted")
         print(f"   Shape: {features.shape}")
     except Exception as e:
@@ -62,7 +67,7 @@ def test_image(image_path):
     # Step 6: Make prediction
     print(f"\n6. Making prediction...")
     try:
-        predicted_idx = svm_pipeline.predict(features_reshaped)[0]
+        predicted_idx = svm_pipeline.predict(features)[0]
         predicted_name = class_names[predicted_idx]
         print(f"   OK: Prediction made")
         print(f"   Predicted class index: {predicted_idx}")
@@ -110,7 +115,7 @@ def test_image(image_path):
 
 def main():
     print("\n")
-    image_path= ("test/78e8b7cb-bb3d-4ee9-9703-1b40a6dd5e1d.jpg")
+    image_path= ("dataset_test/paper/0d8f0b99-d952-4634-8cfe-2f03ab5bfcfe.jpg")
     
     success = test_image(image_path)
     

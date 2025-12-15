@@ -14,28 +14,19 @@ from scipy.stats import loguniform
 from configures import *
 from FeatureLoader import *
 
-
 # -------------------------------
 # Load deep features
 # -------------------------------
 loader = FeatureLoader()
 X, y = loader.load()
-
-# -------------------------------
-# Train/Test Split
-# -------------------------------
-# X_train, X_test, y_train, y_test = train_test_split(
-#     X, y, test_size=0.2, stratify=y, random_state=42
-# )
 print("Train:", X.shape, y.shape)
 
 # -------------------------------
-# Pipeline: SCALER → SVM
+# Pipeline: SCALER → PCA → SVM
 # -------------------------------
 pipe = Pipeline([
-    ("scaler", StandardScaler()),
-    ("pca", PCA()),
-    ("svc", SVC(random_state=42, probability=False, class_weight="balanced"))
+    ("pca", PCA()), #Reduce dimensionality for faster training and potentially better generalization
+    ("svc", SVC(random_state=42, probability=True, class_weight="balanced"))
 ])
 
 # -------------------------------
@@ -43,28 +34,28 @@ pipe = Pipeline([
 # -------------------------------
 param_distributions = {
     "pca__n_components": [None, 64, 128, 256, 512],
-    "pca__whiten": [True, False],
-
-    "svc__kernel": ["rbf"],
-    "svc__C": loguniform(1e-2, 1e3),       # MUCH larger range
-    "svc__gamma": loguniform(1e-7, 1e-1),  # covers small & large gammas
-    "svc__tol": [1e-3, 1e-4],
-    "svc__max_iter": [10000]
+    "pca__whiten": [True, False], #Whitening can improve performance in some cases
+    "svc__kernel": ["rbf","linear","poly"],
+    "svc__C": loguniform(1e-3, 1e3), # controls decision surface
+    "svc__gamma": loguniform(1e-5, 1e-1), # for 'rbf' kernel
+    "svc__degree": [2, 3, 4, 5], # for 'poly' kernel
+    "svc__coef0": [0.0, 0.1, 0.5, 1.0], # for 'poly' kernel
+    "svc__tol": [1e-3, 1e-4], # stopping criterion
+    "svc__max_iter": [10000] # limit iterations to speed up training
 }
-# -------------------------------
 
-cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+cv = StratifiedKFold(n_splits=6, shuffle=True, random_state=42) #cross validation with 6 folds
 
 rs = RandomizedSearchCV(
-    estimator=pipe,
-    param_distributions=param_distributions,
-    n_iter=50,            # explore more combinations
-    scoring="accuracy",
-    cv=cv,
+    estimator=pipe, #The model/pipeline you want to optimize.
+    param_distributions=param_distributions, #The hyperparameter space to search.
+    n_iter=60, #The number of different combinations to try.
+    scoring="accuracy", #The metric to optimize.
+    cv=cv, 
     random_state=42,
-    n_jobs=-1,
-    verbose=2,
-    refit=True
+    n_jobs=-1, # Use all available cores
+    verbose=2, # Show progress messages
+    refit=True # Refit the best model on the whole dataset after search
 )
 
 # -------------------------------
@@ -85,17 +76,14 @@ train_acc = accuracy_score(y, y_train_pred)
 print("\nTraining Accuracy:", round(train_acc, 4))
 
 # -------------------------------
-# Test Accuracy
+
+# Test Accuracy (before thresholding)
 # -------------------------------
 loader = FeatureLoader(features_file="features_test.npy", labels_file="labels_test.npy")
 X_test, y_test = loader.load()
 y_test_pred = best.predict(X_test)
 test_acc = accuracy_score(y_test, y_test_pred)
 print("Test Accuracy:", round(test_acc, 4))
-
-# -------------------------------
-# Detailed Metrics
-# -------------------------------
 print("\nClassification Report:")
 print(classification_report(y_test, y_test_pred))
 

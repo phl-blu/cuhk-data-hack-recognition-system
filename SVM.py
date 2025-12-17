@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 from scipy.stats import loguniform
 
 from configures import *
-from FeatureLoader import *
+from feature_loader import FeatureLoader
 
 # -------------------------------
 # Load deep features
@@ -26,7 +26,7 @@ print("Train:", X.shape, y.shape)
 # -------------------------------
 pipe = Pipeline([
     ("pca", PCA()), #Reduce dimensionality for faster training and potentially better generalization
-    ("svc", SVC(random_state=42, probability=True, class_weight="balanced"))
+    ("svc", SVC(random_state=42, probability=True, class_weight="balanced")) #Help with imbalanced classes
 ])
 
 # -------------------------------

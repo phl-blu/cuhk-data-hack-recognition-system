@@ -7,11 +7,6 @@ from sklearn.preprocessing import StandardScaler
 from configures import *
 
 
-DATA_DIR = "dataset_test"
-OUTPUT_FEATURES = "features_test.npy"
-OUTPUT_LABELS = "labels_test.npy"
-OUTPUT_SCALER = "feature_scaler.pkl"
-
 # Set random seed for reproducibility
 np.random.seed(42)
 

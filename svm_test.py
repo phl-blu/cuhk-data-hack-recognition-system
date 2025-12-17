@@ -114,7 +114,7 @@ def main():
     print("\n")
     # image_path= ("unknown/lego.jpg")
     # image_path= ("new_data/OIP.webp")
-    image_path= ("new_data/78e8b7cb-bb3d-4ee9-9703-1b40a6dd5e1d.jpg")
+    image_path= ("unknown_noisy_images/cardboard_3b60ce96-4472-4918-afbc-ae5298852948_blur_heavy.jpg")
     
     success = test_image(image_path)
     

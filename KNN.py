@@ -123,26 +123,33 @@ class KNNClassifier:
         return joblib.load(path)
 
 
-# Load features from precomputed file
-train_loader = FeatureLoader()
-X_train, y_train = train_loader.load()
+def main():
+    # Load features from precomputed file
+    train_loader = FeatureLoader()
+    X_train, y_train = train_loader.load()
 
-test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
-X_test, y_test = test_loader.load()
+    test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
+    X_test, y_test = test_loader.load()
 
-# Initialize, fit KNN, and save model
-knn = KNNClassifier()
-knn.fit(X_train, y_train)
-knn.save_model("knn_model.pkl")
+    # Initialize, fit KNN, and save model
+    knn = KNNClassifier()
+    knn.fit(X_train, y_train)
+    knn.save_model("knn_model.pkl")
 
-# Test on held-out test set
-y_pred, unk_count = knn.predict(X_test)
-test_acc = accuracy_score(y_test, y_pred)
-print(f"Test Accuracy: {test_acc:.4f}")
-print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
+    # Test on held-out test set
+    y_pred, unk_count = knn.predict(X_test)
+    test_acc = accuracy_score(y_test, y_pred)
+    print(f"Test Accuracy: {test_acc:.4f}")
+    print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
 
-# Predict images in directories
-results = knn.predict_directory("unknown")
-results = knn.predict_directory("new_data")
-# results = knn.predict_directory("captured_images")
-results = knn.predict_directory("unknown_noisy_images")
+    # Predict images in directories (if present)
+    for dir_path in ["unknown", "new_data", "unknown_noisy_images"]:
+        if os.path.isdir(dir_path):
+            knn.predict_directory(dir_path)
+    # Uncomment to enable live capture directory predictions
+    # if os.path.isdir("captured_images"):
+    #     knn.predict_directory("captured_images")
+
+
+if __name__ == "__main__":
+    main()

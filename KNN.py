@@ -122,25 +122,29 @@ class KNNClassifier:
     def load_model(path="knn_model.pkl"):
         return joblib.load(path)
 
+def main():
+    # Load features from precomputed file
+    train_loader = FeatureLoader()
+    X_train, y_train = train_loader.load()
 
-# Load features from precomputed file
-train_loader = FeatureLoader()
-X_train, y_train = train_loader.load()
+    test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
+    X_test, y_test = test_loader.load()
 
-test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
-X_test, y_test = test_loader.load()
+    # Initialize, fit KNN, and save model
+    knn = KNNClassifier()
+    knn.fit(X_train, y_train)
+    knn.save_model("knn_model.pkl")
 
-# Initialize, fit KNN, and save model
-knn = KNNClassifier()
-knn.fit(X_train, y_train)
-knn.save_model("knn_model.pkl")
+    # Test on held-out test set
+    y_pred, unk_count = knn.predict(X_test)
+    test_acc = accuracy_score(y_test, y_pred)
+    print(f"Test Accuracy: {test_acc:.4f}")
+    print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
 
-# Test on held-out test set
-y_pred, unk_count = knn.predict(X_test)
-test_acc = accuracy_score(y_test, y_pred)
-print(f"Test Accuracy: {test_acc:.4f}")
-print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
+    # Predict images in directories
+    knn.predict_directory("unknown")
+    knn.predict_directory("new_data")
 
-# Predict images in directories
-results = knn.predict_directory("unknown")
-results = knn.predict_directory("new_data")
+
+if __name__ == "__main__":
+    main()

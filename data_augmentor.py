@@ -7,7 +7,7 @@ from PIL import Image
 from keras_preprocessing.image import ImageDataGenerator, img_to_array, load_img
 
 
-class WasteDataAugmentor:
+class DataAugmentor:
     def __init__(self, source_dir, output_dir, target_size=(224, 224)):
         self.source_dir = source_dir
         self.output_dir = output_dir
@@ -44,9 +44,6 @@ class WasteDataAugmentor:
             brightness_range=[0.7, 1.3],
             fill_mode='nearest'
         )
-        print("\n" + "=" * 70)
-        print(f"AUGMENTATION {'WITH ORIGINALS' if copy_originals else 'ONLY'}")
-        print("=" * 70)
 
         stats = {
             'total_original': 0,
@@ -64,8 +61,8 @@ class WasteDataAugmentor:
                 if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.gif'))
                 and self.is_valid_image(os.path.join(category_path, f))
             ]
-
-            print(f"\nProcessing {category}: {len(image_files)} images")
+            print("="*20 + f" {category} " + "="*20)
+            print(f"Processing {category}: {len(image_files)} images")
 
             if len(image_files) == 0:
                 print("No valid images found — skipping")
@@ -80,10 +77,8 @@ class WasteDataAugmentor:
             else:
                 # Calculate augmentations needed to reach target_class_size
                 if copy_originals:
-                    # Augmentations = target - originals (originals will be copied)
                     total_needed = max(0, target_class_size - total_images)
                 else:
-                    # Generate all images through augmentation
                     total_needed = target_class_size
                 print(f"Target size: {target_class_size}, Need {total_needed} augmentations")
             
@@ -98,24 +93,18 @@ class WasteDataAugmentor:
                 for img in extra_images:
                     augment_map[img] += 1
                     
-            
             original_count = 0
             augmented_count = 0
 
             for img_file in image_files:
                 img_path = os.path.join(category_path, img_file)
-
-                # Copy original
                 if copy_originals:
                     try:
                         shutil.copy2(img_path, os.path.join(output_path, img_file))
                         original_count += 1
                     except Exception as e:
                         print(f"Error copying {img_file}: {e}")
-
-                # Number of augmentations for this image
                 aug_times = augment_map[img_file]
-
                 # Generate augmentations
                 try:
                     img = load_img(img_path, target_size=self.target_size)
@@ -146,9 +135,7 @@ class WasteDataAugmentor:
                 'augmented': augmented_count,
                 'total': original_count + augmented_count
             }
-            # print total images in category
             print(f"Total images in {category}: {stats['per_category'][category]['total']}")
-            print("#"*20)
             
         print("\n" + "=" * 70)
         print("SUMMARY")

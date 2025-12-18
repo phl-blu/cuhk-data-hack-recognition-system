@@ -1,11 +1,11 @@
 from configures import *
-from waste_data_augmentor import *
+from data_augmentor import *
 
 if __name__ == "__main__":
     if os.path.exists(OUTPUT_DIR):
         shutil.rmtree(OUTPUT_DIR)
         print(f"Removed existing directory: {OUTPUT_DIR}")
-    augmentor = WasteDataAugmentor(
+    augmentor = DataAugmentor(
         source_dir=SOURCE_DIR,
         output_dir=OUTPUT_DIR,
         target_size=(224, 224)

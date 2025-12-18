@@ -5,10 +5,7 @@ import joblib
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import normalize
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import accuracy_score
 from feature_extractor import FeatureExtractor
-from feature_loader import FeatureLoader
-from configures import *
 
 labels_map = {
     "glass": 0, "paper": 1, "cardboard": 2,
@@ -19,7 +16,7 @@ labels_map_rev = {v: k for k, v in labels_map.items()}
 
 class KNNClassifier:
     def __init__(self, k=7, metric='cosine', weight='distance', pca_components=0.95,
-                 mahal_threshold=32.65, scaler_file=SCALER_FILE):
+                 mahal_threshold=32.65, scaler_file="feature_scaler.pkl"):
         self.k = k
         self.metric = metric
         self.weight = weight
@@ -124,6 +121,11 @@ class KNNClassifier:
 
 
 def main():
+    from feature_loader import FeatureLoader
+    from sklearn.metrics import accuracy_score
+    from configures import TEST_FEATURES, TEST_LABELS
+
+
     # Load features from precomputed file
     train_loader = FeatureLoader()
     X_train, y_train = train_loader.load()

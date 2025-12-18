@@ -18,8 +18,8 @@ labels_map_rev = {v: k for k, v in labels_map.items()}
 
 
 class KNNClassifier:
-    def __init__(self, k=3, metric='cosine', weight='distance', pca_components=0.95,
-                 mahal_threshold=32.5, scaler_file=SCALER_FILE):
+    def __init__(self, k=7, metric='cosine', weight='distance', pca_components=0.95,
+                 mahal_threshold=32.65, scaler_file=SCALER_FILE):
         self.k = k
         self.metric = metric
         self.weight = weight
@@ -30,7 +30,7 @@ class KNNClassifier:
         self.model = KNeighborsClassifier(n_neighbors=self.k, metric=self.metric, weights=self.weight)
         
         # PCA for dimensionality reduction (retain pca_components variance)
-        self.pca = PCA(n_components=self.pca_components, random_state=42) if self.pca_components else None
+        self.pca = PCA(n_components=self.pca_components,  random_state=42) if self.pca_components else None
 
         self.scaler = joblib.load(self.scaler_file)
         self.mean_ = None         # mean of training data (for Mahalanobis)
@@ -122,29 +122,27 @@ class KNNClassifier:
     def load_model(path="knn_model.pkl"):
         return joblib.load(path)
 
-def main():
-    # Load features from precomputed file
-    train_loader = FeatureLoader()
-    X_train, y_train = train_loader.load()
 
-    test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
-    X_test, y_test = test_loader.load()
+# Load features from precomputed file
+train_loader = FeatureLoader()
+X_train, y_train = train_loader.load()
 
-    # Initialize, fit KNN, and save model
-    knn = KNNClassifier()
-    knn.fit(X_train, y_train)
-    knn.save_model("knn_model.pkl")
+test_loader = FeatureLoader(features_file=TEST_FEATURES, labels_file=TEST_LABELS)
+X_test, y_test = test_loader.load()
 
-    # Test on held-out test set
-    y_pred, unk_count = knn.predict(X_test)
-    test_acc = accuracy_score(y_test, y_pred)
-    print(f"Test Accuracy: {test_acc:.4f}")
-    print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
+# Initialize, fit KNN, and save model
+knn = KNNClassifier()
+knn.fit(X_train, y_train)
+knn.save_model("knn_model.pkl")
 
-    # Predict images in directories
-    knn.predict_directory("unknown")
-    knn.predict_directory("new_data")
+# Test on held-out test set
+y_pred, unk_count = knn.predict(X_test)
+test_acc = accuracy_score(y_test, y_pred)
+print(f"Test Accuracy: {test_acc:.4f}")
+print(f"Marked as unknown: {unk_count}/{len(y_test)} ({unk_count/len(y_test)*100:.1f}%)")
 
-
-if __name__ == "__main__":
-    main()
+# Predict images in directories
+results = knn.predict_directory("unknown")
+results = knn.predict_directory("new_data")
+# results = knn.predict_directory("captured_images")
+results = knn.predict_directory("unknown_noisy_images")

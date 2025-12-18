@@ -1,10 +1,6 @@
 import os
 import cv2
 import joblib
-import numpy as np
-
-from configures import SCALER_FILE
-from feature_extractor import FeatureExtractor
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
 
@@ -28,14 +24,6 @@ def predict(dataFilePath, bestModelPath):
 
     # load trained KNN model
     model = joblib.load(bestModelPath)
-
-    # Re-attach extractor or scaler if they were not serialized with the model
-    if getattr(model, "extractor", None) is None:
-        model.extractor = FeatureExtractor()
-    if getattr(model, "scaler", None) is None:
-        if not os.path.exists(SCALER_FILE):
-            raise FileNotFoundError(f"Scaler file not found: {SCALER_FILE}")
-        model.scaler = joblib.load(SCALER_FILE)
 
     predictions = []
     for path in image_paths:

@@ -135,10 +135,7 @@ def evaluate_from_npy(features_file=TEST_FEATURES, labels_file=TEST_LABELS, thre
         "per_class_correct": per_class_correct,
     }
 def main():
-    # return evaluate_from_npy(TEST_FEATURES, TEST_LABELS, threshold=0.61)
-    res =  test_images_from_folder("unknown", threshold=0.61 , debug=True)
-    for image_path, pred in res:
-        print(f"{image_path}: {pred}")
+    evaluate_from_npy(TEST_FEATURES, TEST_LABELS, threshold=0.61)
 
 
 if __name__ == "__main__":

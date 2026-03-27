@@ -33,29 +33,27 @@ pipe = Pipeline([
 # Hyperparameter search space
 # -------------------------------
 param_distributions = {
-    "pca__n_components": [None, 64, 128, 256, 512],
-    "pca__whiten": [True, False], #Whitening can improve performance in some cases
-    "svc__kernel": ["rbf","linear","poly"],
-    "svc__C": loguniform(1e-3, 1e3), # controls decision surface
-    "svc__gamma": loguniform(1e-5, 1e-1), # for 'rbf' kernel
-    "svc__degree": [2, 3, 4, 5], # for 'poly' kernel
-    "svc__coef0": [0.0, 0.1, 0.5, 1.0], # for 'poly' kernel
-    "svc__tol": [1e-3, 1e-4], # stopping criterion
-    "svc__max_iter": [10000] # limit iterations to speed up training
+    "pca__n_components": [128, 256, 512],
+    "pca__whiten": [True, False],
+    "svc__kernel": ["rbf", "linear"],
+    "svc__C": loguniform(1e-1, 1e3),
+    "svc__gamma": loguniform(1e-5, 1e-1),
+    "svc__tol": [1e-3, 1e-4],
+    "svc__max_iter": [10000]
 }
 
-cv = StratifiedKFold(n_splits=6, shuffle=True, random_state=42) #cross validation with 6 folds
+cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
 rs = RandomizedSearchCV(
-    estimator=pipe, #The model/pipeline you want to optimize.
-    param_distributions=param_distributions, #The hyperparameter space to search.
-    n_iter=60, #The number of different combinations to try.
-    scoring="accuracy", #The metric to optimize.
-    cv=cv, 
+    estimator=pipe,
+    param_distributions=param_distributions,
+    n_iter=20,
+    scoring="accuracy",
+    cv=cv,
     random_state=42,
-    n_jobs=-1, # Use all available cores
-    verbose=2, # Show progress messages
-    refit=True # Refit the best model on the whole dataset after search
+    n_jobs=-1,
+    verbose=2,
+    refit=True
 )
 
 # -------------------------------

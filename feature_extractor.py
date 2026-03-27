@@ -1,3 +1,9 @@
+import os
+os.environ['TF_DISABLE_CUDA_TIMER'] = '1'
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=0 --tf_xla_enable_xla_devices=false'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['XLA_FLAGS'] = '--xla_gpu_autotune_level=0'
+
 import cv2
 import numpy as np
 from tensorflow.keras.applications import EfficientNetB0
@@ -19,14 +25,11 @@ class FeatureExtractor:
 
         for size in scales:
             img = cv2.resize(image, (size, size))
-            # Convert grayscale to RGB if needed
             if len(img.shape) == 2 or img.shape[2] == 1:
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-
             img = preprocess_input(img.astype(np.float32))
             img = np.expand_dims(img, axis=0)
             feat = self.model.predict(img, verbose=0)[0]
             features_list.append(feat)
 
-        features = np.concatenate(features_list)
-        return features
+        return np.concatenate(features_list)

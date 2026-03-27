@@ -15,8 +15,8 @@ labels_map_rev = {v: k for k, v in labels_map.items()}
 
 
 class KNNClassifier:
-    def __init__(self, k=7, metric='cosine', weight='distance', pca_components=0.95,
-                 mahal_threshold=32.65, scaler_file="feature_scaler.pkl"):
+    def __init__(self, k=9, metric='euclidean', weight='uniform', pca_components=256,
+                 mahal_threshold=17.8332, scaler_file="feature_scaler.pkl"):
         self.k = k
         self.metric = metric
         self.weight = weight

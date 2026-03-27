@@ -1,72 +1,118 @@
 import os
 import time
+import threading
 import cv2
 import joblib
 import numpy as np
+from ultralytics import YOLO
 
-from configures import SCALER_FILE
-from KNN import KNNClassifier, labels_map_rev
+from configures import SCALER_FILE, MODEL_FILE
 from feature_extractor import FeatureExtractor
 
-MODEL_PATH = "knn_model.pkl"
+class_names = ['glass', 'paper', 'cardboard', 'plastic', 'metal', 'trash', 'unknown']
+THRESHOLD = 0.61
+BOX_COLOR = (0, 255, 0)
+TEXT_COLOR = (0, 0, 0)
 
 
-def _load_knn(model_path):
-    model = joblib.load(model_path)
+class Classifier:
+    def __init__(self):
+        self.extractor = FeatureExtractor()
+        self.scaler = joblib.load(SCALER_FILE)
+        self.svm = joblib.load(MODEL_FILE)
+        self.lock = threading.Lock()
+        self.result = ("...", 0.0, None)
+        self.latest_frame = None
+        self.running = True
+        self.thread = threading.Thread(target=self._worker, daemon=True)
+        self.thread.start()
 
-    if getattr(model, "extractor", None) is None:
-        model.extractor = FeatureExtractor()
-    if getattr(model, "scaler", None) is None:
-        if not os.path.exists(SCALER_FILE):
-            raise FileNotFoundError(f"Scaler file not found: {SCALER_FILE}")
-        model.scaler = joblib.load(SCALER_FILE)
-    return model
+    def submit(self, frame):
+        with self.lock:
+            self.latest_frame = frame.copy()
+
+    def get_result(self):
+        with self.lock:
+            return self.result
+
+    def _worker(self):
+        while self.running:
+            with self.lock:
+                frame = self.latest_frame
+                self.latest_frame = None
+            if frame is None:
+                time.sleep(0.001)
+                continue
+            label, prob, box = self._classify(frame)
+            with self.lock:
+                self.result = (label, prob, box)
+
+    def _classify(self, frame):
+        h, w = frame.shape[:2]
+
+        # Fixed center crop (50% of frame)
+        margin_x, margin_y = w // 4, h // 4
+        x1, y1 = margin_x, margin_y
+        x2, y2 = w - margin_x, h - margin_y
+        box = [x1, y1, x2, y2]
+
+        crop = frame[y1:y2, x1:x2]
+        if crop.size == 0:
+            return "unknown", 0.0, box
+
+        crop_rgb = cv2.cvtColor(crop, cv2.COLOR_BGR2RGB)
+        features = self.extractor.extract_features(crop_rgb)
+        features = self.scaler.transform(features.reshape(1, -1))
+        probs = self.svm.predict_proba(features)[0]
+        max_prob = probs.max()
+        label = "unknown" if max_prob < THRESHOLD else class_names[probs.argmax()]
+        return label, float(max_prob), box
+
+    def stop(self):
+        self.running = False
 
 
-def run_camera(model_path=MODEL_PATH, camera_index=0):
-    knn = _load_knn(model_path)
+def run_camera(camera_index=0):
+    print("Loading models...")
+    classifier = Classifier()
+    print("Models loaded. Press 'q' or ESC to quit.")
 
-    cap = cv2.VideoCapture(camera_index)
+    cap = cv2.VideoCapture(camera_index, cv2.CAP_V4L2)
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    cap.set(cv2.CAP_PROP_FPS, 30)
     if not cap.isOpened():
         raise RuntimeError("Unable to open camera")
 
-    fps_list = []
-    start_run = time.time()
-
+    cv2.namedWindow("Material Identification", cv2.WINDOW_GUI_NORMAL)
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        t0 = time.time()
+        classifier.submit(frame)
+        label, prob, box = classifier.get_result()
 
-        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        features = knn.extractor.extract_features(frame_rgb)
-        features = knn.scaler.transform(features.reshape(1, -1))
-        pred, _ = knn.predict(features)
-
-        t1 = time.time()
-        fps = 1.0 / max(t1 - t0, 1e-6)
-        fps_list.append(fps)
-
-        label = labels_map_rev[int(pred[0])]
-        cv2.putText(frame, f"{label} | FPS: {fps:.2f}", (20, 40),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        if box:
+            x1, y1, x2, y2 = box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), BOX_COLOR, 2)
+            text = f"{label} ({prob:.2f})"
+            (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+            cv2.rectangle(frame, (x1, y1 - th - 8), (x1 + tw, y1), BOX_COLOR, -1)
+            cv2.putText(frame, text, (x1, y1 - 4),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, TEXT_COLOR, 2)
+        else:
+            cv2.putText(frame, f"{label} ({prob:.2f})", (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, BOX_COLOR, 2)
 
         cv2.imshow("Material Identification", frame)
-
-        key = cv2.waitKey(1) & 0xFF
-        if key == 27 or key == ord('q'):  # ESC or 'q'
+        if cv2.waitKey(1) & 0xFF in (27, ord('q')):
             break
 
+    classifier.stop()
     cap.release()
     cv2.destroyAllWindows()
-
-    if fps_list:
-        print(f"Average FPS: {np.mean(fps_list):.2f}")
-        print(f"Min FPS: {np.min(fps_list):.2f}")
-        print(f"Max FPS: {np.max(fps_list):.2f}")
-    print(f"Runtime: {(time.time() - start_run)/60:.1f} minutes")
 
 
 if __name__ == "__main__":

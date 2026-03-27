@@ -1,10 +1,22 @@
 import os
+os.environ['TF_DISABLE_CUDA_TIMER'] = '1'
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_auto_jit=0 --tf_xla_enable_xla_devices=false'
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+os.environ['XLA_FLAGS'] = '--xla_gpu_autotune_level=0'
+
 import cv2
 import numpy as np
 import joblib
+import tensorflow as tf
 from feature_extractor import FeatureExtractor 
 from sklearn.preprocessing import StandardScaler
 from configures import *
+
+# Limit GPU memory growth to prevent OOM hangs
+gpus = tf.config.list_physical_devices('GPU')
+if gpus:
+    for gpu in gpus:
+        tf.config.experimental.set_memory_growth(gpu, True)
 
 
 # Set random seed for reproducibility

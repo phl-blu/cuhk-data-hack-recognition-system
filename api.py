@@ -1,3 +1,4 @@
+import base64
 import logging
 import os
 import sys
@@ -6,7 +7,7 @@ from contextlib import asynccontextmanager
 import cv2
 import joblib
 import numpy as np
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -112,3 +113,35 @@ async def health():
         return {"status": "ok"}
     from fastapi.responses import JSONResponse
     return JSONResponse(status_code=503, content={"status": "loading"})
+
+
+@app.websocket("/ws/classify")
+async def ws_classify(websocket: WebSocket):
+    await websocket.accept()
+    loop = __import__("asyncio").get_event_loop()
+    try:
+        while True:
+            message = await websocket.receive()
+            # Determine raw bytes from text (base64) or binary message
+            if "text" in message and message["text"] is not None:
+                try:
+                    frame_bytes = base64.b64decode(message["text"])
+                except Exception:
+                    await websocket.send_text('{"error": "invalid frame"}')
+                    continue
+            elif "bytes" in message and message["bytes"] is not None:
+                frame_bytes = message["bytes"]
+            else:
+                await websocket.send_text('{"error": "invalid frame"}')
+                continue
+
+            try:
+                result: ClassificationResult = await loop.run_in_executor(
+                    None, classifier.classify, frame_bytes
+                )
+                await websocket.send_text(result.model_dump_json())
+            except Exception as exc:
+                logger.exception("Unhandled error during classification: %s", exc)
+                await websocket.send_text('{"error": "internal error"}')
+    except WebSocketDisconnect:
+        logger.info("WebSocket client disconnected")

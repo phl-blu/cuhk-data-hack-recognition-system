@@ -1,0 +1,19 @@
+# Kiro
+.kiro/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+venv_wsl/
+*.pkl
+*.npy
+
+# Dataset (large files)
+dataset_complete/
+dataset_train/
+dataset_test/
+
+# Models
+yolov8n.pt

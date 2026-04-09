@@ -122,17 +122,26 @@ async def ws_classify(websocket: WebSocket):
     try:
         while True:
             message = await websocket.receive()
+            # Handle disconnect message type explicitly
+            if message.get("type") == "websocket.disconnect":
+                break
             # Determine raw bytes from text (base64) or binary message
             if "text" in message and message["text"] is not None:
                 try:
                     frame_bytes = base64.b64decode(message["text"])
                 except Exception:
-                    await websocket.send_text('{"error": "invalid frame"}')
+                    try:
+                        await websocket.send_text('{"error": "invalid frame"}')
+                    except RuntimeError:
+                        break
                     continue
             elif "bytes" in message and message["bytes"] is not None:
                 frame_bytes = message["bytes"]
             else:
-                await websocket.send_text('{"error": "invalid frame"}')
+                try:
+                    await websocket.send_text('{"error": "invalid frame"}')
+                except RuntimeError:
+                    break
                 continue
 
             try:
@@ -140,8 +149,13 @@ async def ws_classify(websocket: WebSocket):
                     None, classifier.classify, frame_bytes
                 )
                 await websocket.send_text(result.model_dump_json())
+            except RuntimeError:
+                break
             except Exception as exc:
                 logger.exception("Unhandled error during classification: %s", exc)
-                await websocket.send_text('{"error": "internal error"}')
+                try:
+                    await websocket.send_text('{"error": "internal error"}')
+                except RuntimeError:
+                    break
     except WebSocketDisconnect:
         logger.info("WebSocket client disconnected")
